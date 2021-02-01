@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<button onclick="Start()" style="width:200px;height:200px">Start test</button>
+	<script src='PopEngineCommon/PopWebApi.js'></script>	
+	<script src='PopEngineCommon/PopApi.js'></script>	
+	<script>
+	
+	let gAudioContext = null;
+	const AudioContextPromise = Pop.CreatePromise();
+	let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
+	let SoundDatas = {};	//	[url]
+	let Sounds = [];
+	let SoundBuffers = [];	
+
+	async function DecodeAudioSample(AudioDataOrig)
+	{
+		const Context = await AudioContextPromise;
+		const AudioData = AudioDataOrig.slice();
+		const DecodePromise = Pop.CreatePromise();
+		Context.decodeAudioData(AudioData,DecodePromise.Resolve,DecodePromise.Reject);
+		const SoundBuffer = await DecodePromise;
+		SoundBuffers.push(SoundBuffer);
+		Pop.Debug(`Now have ${SoundBuffers.length} sound buffers`);
+		return SoundBuffer;
+	}
+
+	function GetAudioContext()
+	{
+		if ( !gAudioContext )
+		{
+			const TAudioContext = window.AudioContext || window.webkitAudioContext;
+			gAudioContext = new TAudioContext();
+			AudioContextPromise.Resolve(gAudioContext);
+		}
+		return gAudioContext;
+	}
+	
+	class Sound_t
+	{
+		constructor(AudioData)
+		{
+			this.AudioData = AudioData;
+			this.Play().catch(console.error);
+		}
+		
+		async Play()
+		{
+			this.SampleBuffer = await DecodeAudioSample(this.AudioData);
+			
+		}
+	}
+	
+	async function LoadSoundData(Url)
+	{
+		if ( !SoundDatas.hasOwnProperty(Url) )
+		{
+			const Response = await fetch(Url);
+			const Contents = await Response.arrayBuffer();
+			Pop.Debug(`Loaded ${Url} x${Contents.length}`);
+			SoundDatas[Url] = Contents;
+		}
+		return SoundDatas[Url];
+	}
+	
+	async function LoadSound(Url)
+	{
+		const Data = await LoadSoundData(Url);
+		const Sound = new Sound_t(Data);
+		Sounds.push(Sound);
+	}
+	
+	let Pause = 100;
+	async function TestRun()
+	{
+		console.log(`Waiting for audio context`);
+		await AudioContextPromise;
+		console.log(`Got audio context`);
+
+		for ( let i=0;	i<40;	i++ )
+		{
+			await LoadSound(SoundUrls[0]);
+			await Pop.Yield(Pause);
+		}	
+	}
+	
+	function Start()
+	{
+		TestRun().catch(console.error);
+		GetAudioContext();
+	}
+	
+	
+	</script>
+</body>
+
+</html>
