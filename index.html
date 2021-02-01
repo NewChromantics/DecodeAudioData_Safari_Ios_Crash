@@ -17,8 +17,9 @@ body
 	
 	let gAudioContext = null;
 	const AudioContextPromise = Pop.CreatePromise();
-	//let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
-	let SoundUrls = ['AudioAssets/Silence500.mp3'];
+	let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
+	//let SoundUrls = ['AudioAssets/Silence500.mp3'];
+	const CropSoundSize = 1024*40;//null;
 	let SoundDatas = {};	//	[url]
 	let Sounds = [];
 	let SoundBuffers = [];	
@@ -51,7 +52,9 @@ body
 	async function DecodeAudioSample(AudioDataOrig)
 	{
 		const Context = await AudioContextPromise;
-		const AudioData = AudioDataOrig.slice();
+		const SliceSize = CropSoundSize ? CropSoundSize : AudioDataOrig.byteLength;
+		const AudioData = AudioDataOrig.slice(0,SliceSize);
+		SetDivText('SampleMeta',`Compressed audio data x${AudioData.byteLength} bytes`);
 		const DecodePromise = Pop.CreatePromise();
 		Context.decodeAudioData(AudioData,DecodePromise.Resolve,DecodePromise.Reject);
 		const SoundBuffer = await DecodePromise;
@@ -93,7 +96,6 @@ body
 			const Response = await fetch(Url);
 			const Contents = await Response.arrayBuffer();
 			Pop.Debug(`Loaded ${Url} x${Contents.byteLength} bytes`);
-			SetDivText('SampleMeta',`Loaded ${Url} x${Contents.byteLength}`);
 			SoundDatas[Url] = Contents;
 		}
 		return SoundDatas[Url];
