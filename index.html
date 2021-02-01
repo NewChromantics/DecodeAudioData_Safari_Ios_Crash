@@ -21,12 +21,22 @@ body
 	let Sounds = [];
 	let SoundBuffers = [];	
 	
+	function PushDebug()
+	{
+		const DebugBox = document.querySelector('#DebugBox');
+		const DebugText = Array.from(arguments).join(', ');
+		//	place new text at the top
+		DebugBox.innerHTML = DebugText +'<br/>' + DebugBox.innerHTML;
+	}
 	Pop.Debug = function()
 	{
 		console.log(...arguments);
-		const DebugBox = document.querySelector('#DebugBox');
-		const DebugText = Array.from(arguments).join(', ');
-		DebugBox.innerText = DebugBox.innerText + '<br/>' + DebugText;
+		PushDebug(...arguments)
+	}
+	Pop.Warning = function()
+	{
+		console.warn(...arguments);
+		PushDebug(...arguments)
 	}
 		
 
@@ -58,7 +68,7 @@ body
 		constructor(AudioData)
 		{
 			this.AudioData = AudioData;
-			this.Play().catch(console.error);
+			this.Play().catch(Pop.Debug);
 		}
 		
 		async Play()
@@ -87,17 +97,30 @@ body
 		Sounds.push(Sound);
 	}
 	
+	function FreeSamples()
+	{
+		for ( let i=0;	i<SoundBuffers.length;	i++ )
+		{
+			if ( !SoundBuffers[i] )
+				continue;
+			Pop.Debug(`Free/nulling sample buffer ${i}`);
+			SoundBuffers[i] = null;
+		}
+	}
+	
 	let Pause = 50;
 	async function TestRun()
 	{
-		console.log(`Waiting for audio context`);
+		Pop.Debug(`Waiting for audio context`);
 		await AudioContextPromise;
-		console.log(`Got audio context`);
+		Pop.Debug(`Got audio context`);
 
-		for ( let i=0;	i<100;	i++ )
+		for ( let i=0;	i<200;	i++ )
 		{
 			await LoadSound(SoundUrls[0]);
 			await Pop.Yield(Pause);
+			
+			FreeSamples();
 		}	
 	}
 	
