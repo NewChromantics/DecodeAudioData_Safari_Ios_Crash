@@ -2,6 +2,12 @@
 <html>
 
 <head>
+<style>
+body
+{
+	font-size:	30pt;
+}
+</style>
 	<button onclick="Start()" style="width:200px;height:200px">Start test</button>
 	<div id="DebugBox">Debug:</div>
 	<script src='PopEngineCommon/PopWebApi.js'></script>	
@@ -20,7 +26,7 @@
 		console.log(...arguments);
 		const DebugBox = document.querySelector('#DebugBox');
 		const DebugText = Array.from(arguments).join(', ');
-		DebugBox.innertText = DebugBox.innerText + '<br/>' + DebugText;
+		DebugBox.innerText = DebugBox.innerText + '<br/>' + DebugText;
 	}
 		
 
