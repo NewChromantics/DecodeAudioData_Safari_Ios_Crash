@@ -9,6 +9,7 @@ body
 }
 </style>
 	<button onclick="Start()" style="width:200px;height:200px">Start test</button>
+	<div id="SampleMeta">SampleMeta</div>
 	<div id="DebugBox">Debug:</div>
 	<script src='PopEngineCommon/PopWebApi.js'></script>	
 	<script src='PopEngineCommon/PopApi.js'></script>	
@@ -16,10 +17,17 @@ body
 	
 	let gAudioContext = null;
 	const AudioContextPromise = Pop.CreatePromise();
-	let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
+	//let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
+	let SoundUrls = ['AudioAssets/Silence500.mp3'];
 	let SoundDatas = {};	//	[url]
 	let Sounds = [];
 	let SoundBuffers = [];	
+	
+	function SetDivText(Name,Contents)
+	{
+		const DebugBox = document.querySelector(`#${Name}`);
+		DebugBox.innerHTML = Contents;
+	}
 	
 	function PushDebug()
 	{
@@ -84,7 +92,8 @@ body
 		{
 			const Response = await fetch(Url);
 			const Contents = await Response.arrayBuffer();
-			Pop.Debug(`Loaded ${Url} x${Contents.length}`);
+			Pop.Debug(`Loaded ${Url} x${Contents.byteLength} bytes`);
+			SetDivText('SampleMeta',`Loaded ${Url} x${Contents.byteLength}`);
 			SoundDatas[Url] = Contents;
 		}
 		return SoundDatas[Url];
