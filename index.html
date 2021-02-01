@@ -5,7 +5,7 @@
 <style>
 body
 {
-	font-size:	30pt;
+	font-size:	50pt;
 }
 </style>
 	<button onclick="Start()" style="width:200px;height:200px">Start test</button>
@@ -108,14 +108,14 @@ body
 		}
 	}
 	
-	let Pause = 50;
+	let Pause = 150;
 	async function TestRun()
 	{
 		Pop.Debug(`Waiting for audio context`);
 		await AudioContextPromise;
 		Pop.Debug(`Got audio context`);
 
-		for ( let i=0;	i<200;	i++ )
+		for ( let i=0;	i<100;	i++ )
 		{
 			await LoadSound(SoundUrls[0]);
 			await Pop.Yield(Pause);
