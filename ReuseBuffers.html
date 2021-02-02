@@ -243,9 +243,9 @@ body
 	const NoisePcmSecs = 10;
 	
 	let PauseBetweenLoadingSound = 0;
-	let NewSoundGroupDelay = 100;
+	let NewSoundGroupDelay = 400;
 	let Iterations = 900;
-	let ConcurrentSounds = 30;
+	let ConcurrentSounds = 10;
 	const MaxPoolSize = ConcurrentSounds;
 	let AudioBufferPool = null;
 	let CreatedSoundNodes = 0;
@@ -386,6 +386,7 @@ body
 	{
 		FreeAudioBuffer(SoundNode.buffer);
 		SoundNode.stop();
+		SoundNode.disconnect();
 		SoundNode.buffer = null;
 		FreedSoundNodes++;
 		Debug(`FreedSoundNodes=${FreedSoundNodes}`);
