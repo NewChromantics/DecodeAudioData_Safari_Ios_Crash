@@ -72,9 +72,13 @@ body
 	{
 		const Context = await AudioContextPromise;
 		const SliceSize = CropSoundSize ? CropSoundSize : AudioDataOrig.byteLength;
+		//	decodeAudioData frees the underlying buffer to reduce memory usage,
+		//	so we always need to slice/copy the buffer
 		const AudioData = AudioDataOrig.slice(0,SliceSize);
 		SetDivText('SampleMeta',`Compressed audio data x${AudioData.byteLength} bytes`);
 		const DecodePromise = Pop.CreatePromise();
+		//	gr: "newer" api returns a promise, but safari ios errors with 1 arg, so is using old syntax
+		//	https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/decodeAudioData
 		Context.decodeAudioData(AudioData,DecodePromise.Resolve,DecodePromise.Reject);
 		const SoundBuffer = await DecodePromise;
 		SoundBuffers.push(SoundBuffer);
@@ -103,7 +107,10 @@ body
 		
 		async Play()
 		{
-			this.SampleBuffer = await DecodeAudioSample(this.AudioData);
+			const SampleBuffer = await DecodeAudioSample(this.AudioData);
+			//	gr: test, dont store on self
+			//	gr: if you dont store, crash ~80 (general oom?)
+			this.SampleBuffer = SampleBuffer;
 			
 		}
 	}
