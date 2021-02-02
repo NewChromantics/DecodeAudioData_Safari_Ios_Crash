@@ -67,11 +67,24 @@ body
 		PushDebug(...arguments)
 	}
 	
-	function CopyTypedArray(Array,SizeLimit)
+	function CopyTypedArray(Data,SizeLimit)
 	{
-		SizeLimit = SizeLimit ? SizeLimit : Array.byteLength;
-		SizeLimit = Math.min( SizeLimit, Array.byteLength );
-		return Array.slice(0,SizeLimit);
+		SizeLimit = SizeLimit ? SizeLimit : Data.byteLength;
+		SizeLimit = Math.min( SizeLimit, Data.byteLength );
+
+		//	gr: no difference
+		if ( false )
+		{
+			Pop.Debug(`Copying Typed Array...`);
+			const OldArray = new Uint8Array(Data);
+			const NewArray = new Uint8Array( SizeLimit );
+			for ( let i=0;	i<Data.byteLength;	i++ )
+				NewArray[i] = OldArray[i];
+			return NewArray.buffer;
+		}
+
+
+		return Data.slice(0,SizeLimit);
 	}
 	
 	async function DecodeAudioSample(AudioDataOrig)
