@@ -11,9 +11,28 @@ body
 	<button onclick="Start()" style="width:200px;height:200px">Start test</button>
 	<div id="SampleMeta">SampleMeta</div>
 	<div id="DebugBox">Debug:</div>
-	<script src='PopEngineCommon/PopWebApi.js'></script>	
-	<script src='PopEngineCommon/PopApi.js'></script>	
 	<script>
+	let Pop = {};
+	Pop.CreatePromise = function()
+	{
+		let Callbacks = {};
+		let PromiseHandler = function(Resolve,Reject)
+		{
+			Callbacks.Resolve = Resolve;
+			Callbacks.Reject = Reject;
+		}
+		let Prom = new Promise(PromiseHandler);
+		Prom.Resolve = Callbacks.Resolve;
+		Prom.Reject = Callbacks.Reject;
+		return Prom;
+	}
+		
+	Pop.Yield = function(Milliseconds)
+	{
+		const Promise = Pop.CreatePromise();
+		setTimeout( Promise.Resolve, Milliseconds );
+		return Promise;
+	}
 	
 	let gAudioContext = null;
 	const AudioContextPromise = Pop.CreatePromise();
