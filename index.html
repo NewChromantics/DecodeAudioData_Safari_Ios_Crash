@@ -164,7 +164,18 @@ body
 		}
 	}
 	
-	let Pause = 150;
+	async function WaitForFrame()
+	{
+		const NewFramePromise = Pop.CreatePromise();
+		function OnNewFrame()
+		{
+			NewFramePromise.Resolve();
+		}
+		requestAnimationFrame(OnNewFrame);
+		return NewFramePromise;
+	}
+	
+	let Pause = 100;
 	async function TestRun()
 	{
 		Pop.Debug(`Waiting for audio context`);
@@ -175,6 +186,7 @@ body
 		{
 			await LoadSound(SoundUrls[0]);
 			await Pop.Yield(Pause);
+			//await WaitForFrame();
 			
 			FreeSamples();
 		}	
