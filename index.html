@@ -36,9 +36,31 @@ body
 	
 	let gAudioContext = null;
 	const AudioContextPromise = Pop.CreatePromise();
-	let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
+	
+	//	ffprobe silence
+	//	 Duration: 00:00:00.85, start: 0.000000, bitrate: 346 kb/s
+	//	Stream #0:0: Audio: mp3, 8000 Hz, mono, s16p, 8 kb/s
+	//	Stream #0:1: Video: png, rgba(pc), 1080x1080 [SAR 2109:2109 DAR 1:1], 90k tbr, 90k tbn, 90k tbc
 	//let SoundUrls = ['AudioAssets/Silence500.mp3'];
+	
+	//	ffprobe blue organ
+	//	Duration: 00:01:14.06, start: 0.000000, bitrate: 160 kb/s
+	//	Stream #0:0: Audio: mp3, 48000 Hz, stereo, s16p, 160 kb/s
+	//let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
+	let SoundUrls = ['AudioAssets/Blue/Blue_30Secs.mp3'];
 	const CropSoundSize = 1024*40;//null;
+
+	//	if 	CreateSampleFromCode defined, the this is the params for createBuffer (channels, sampleframes, samplerate)
+	//	44khz stereo
+	//		10sec sample reaches 300
+	//		60sec crashes around 50
+	//	48khz (iphone 6s hardware smaple rate)
+	//		30 sec stereo ~130
+	//		30 sec mono ~250
+	const SampleDurationSecs = 75;
+	//const CreateSampleFromCode = [2,SampleDurationSecs*48000,48000];
+	const CreateSampleFromCode = null;
+
 	let SoundDatas = {};	//	[url]
 	let Sounds = [];
 	let SoundBuffers = [];	
@@ -90,15 +112,27 @@ body
 	async function DecodeAudioSample(AudioDataOrig)
 	{
 		const Context = await AudioContextPromise;
-		const SliceSize = CropSoundSize ? CropSoundSize : AudioDataOrig.byteLength;
-		//	decodeAudioData frees the underlying buffer to reduce memory usage,
-		//	so we always need to slice/copy the buffer
-		const AudioData = CopyTypedArray(AudioDataOrig,SliceSize);
-		SetDivText('SampleMeta',`Compressed audio data x${AudioData.byteLength} bytes`);
 		const DecodePromise = Pop.CreatePromise();
-		//	gr: "newer" api returns a promise, but safari ios errors with 1 arg, so is using old syntax
-		//	https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/decodeAudioData
-		Context.decodeAudioData(AudioData,DecodePromise.Resolve,DecodePromise.Reject);
+		
+		if ( CreateSampleFromCode )
+		{
+			const Buffer = Context.createBuffer( ...CreateSampleFromCode );
+			DecodePromise.Resolve(Buffer);
+			SetDivText('SampleMeta',`${CreateSampleFromCode}`);
+		}
+		else
+		{
+			const SliceSize = CropSoundSize ? CropSoundSize : AudioDataOrig.byteLength;
+			//	decodeAudioData frees the underlying buffer to reduce memory usage,
+			//	so we always need to slice/copy the buffer
+			const AudioData = CopyTypedArray(AudioDataOrig,SliceSize);
+			SetDivText('SampleMeta',`Compressed audio data x${AudioData.byteLength} bytes`);
+
+			//	gr: "newer" api returns a promise, but safari ios errors with 1 arg, so is using old syntax
+			//	https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/decodeAudioData
+			Context.decodeAudioData(AudioData,DecodePromise.Resolve,DecodePromise.Reject);
+		}
+			
 		const SoundBuffer = await DecodePromise;
 		SoundBuffers.push(SoundBuffer);
 		Pop.Debug(`Now have ${SoundBuffers.length} sound buffers`);
@@ -186,7 +220,8 @@ body
 		{
 			await LoadSound(SoundUrls[0]);
 			await Pop.Yield(Pause);
-			//await WaitForFrame();
+			//	gr: doesn't help, but force a wait for a render show debug appears
+			await WaitForFrame();
 			
 			FreeSamples();
 		}	
