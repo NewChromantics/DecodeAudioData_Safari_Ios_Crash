@@ -66,15 +66,21 @@ body
 		console.warn(...arguments);
 		PushDebug(...arguments)
 	}
-		
-
+	
+	function CopyTypedArray(Array,SizeLimit)
+	{
+		SizeLimit = SizeLimit ? SizeLimit : Array.byteLength;
+		SizeLimit = Math.min( SizeLimit, Array.byteLength );
+		return Array.slice(0,SizeLimit);
+	}
+	
 	async function DecodeAudioSample(AudioDataOrig)
 	{
 		const Context = await AudioContextPromise;
 		const SliceSize = CropSoundSize ? CropSoundSize : AudioDataOrig.byteLength;
 		//	decodeAudioData frees the underlying buffer to reduce memory usage,
 		//	so we always need to slice/copy the buffer
-		const AudioData = AudioDataOrig.slice(0,SliceSize);
+		const AudioData = CopyTypedArray(AudioDataOrig,SliceSize);
 		SetDivText('SampleMeta',`Compressed audio data x${AudioData.byteLength} bytes`);
 		const DecodePromise = Pop.CreatePromise();
 		//	gr: "newer" api returns a promise, but safari ios errors with 1 arg, so is using old syntax
