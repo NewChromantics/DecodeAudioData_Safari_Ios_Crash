@@ -182,8 +182,8 @@ body
 	
 	async function LoadSoundDataNoise()
 	{
-		let Khz = 48000;
-		let Secs = 60;
+		let Khz = NoisePcmKhz;
+		let Secs = NoisePcmSecs;
 		let Left = new Float32Array( Khz * Secs );
 		let Right = new Float32Array( Khz * Secs );
 		for ( let s=0;	s<Left.length;	s++ )
@@ -235,10 +235,18 @@ body
 		return NewFramePromise;
 	}
 	
+	const PooledItemChannels = 2;
+	const PooledItemDurationSecs = 30;
+	const PooledItemKhz = 48000;
+	
+	const NoisePcmKhz = PooledItemKhz;
+	const NoisePcmSecs = 10;
+	
 	let PauseBetweenLoadingSound = 0;
-	let NewSoundGroupDelay = 500;
+	let NewSoundGroupDelay = 100;
 	let Iterations = 900;
-	let ConcurrentSounds = 5;
+	let ConcurrentSounds = 30;
+	const MaxPoolSize = ConcurrentSounds;
 	let AudioBufferPool = null;
 	let CreatedSoundNodes = 0;
 	let FreedSoundNodes = 0;
@@ -340,9 +348,9 @@ body
 		
 		async AllocNewPoolItem()
 		{
-			const Channels = 2;
-			const SampleSecs = 30;
-			const Khz = 48000;
+			const Channels = PooledItemChannels;
+			const SampleSecs = PooledItemDurationSecs;
+			const Khz = PooledItemKhz;
 			const Samples = SampleSecs * Khz;
 			const Buffer = this.AudioContext.createBuffer( Channels, Samples, Khz );
 			return Buffer;
@@ -353,7 +361,7 @@ body
 	async function AllocAudioBuffer(AudioContext)
 	{
 		if ( !AudioBufferPool )
-			AudioBufferPool = new AudioBufferPool_t(AudioContext);
+			AudioBufferPool = new AudioBufferPool_t(AudioContext,MaxPoolSize);
 		return await AudioBufferPool.Alloc();
 	}
 	
@@ -408,13 +416,13 @@ body
 				Debug(`Allocating ${s}/${ConcurrentSounds} in group ${i}`);
 				const Pcm = await LoadSoundDataNoise();
 				const AudioBuffer = await AllocAudioBuffer(AudioContext);
-				await WaitForFrame();
 				LoadAudioIntoBuffer( AudioBuffer, Pcm );
+				//await WaitForFrame();
 				const SoundNode = CreateSoundNode(AudioContext,AudioBuffer);
 				SoundNodes.push(SoundNode);
 				SoundNode.start();
 				await WaitForFrame();
-				await Pop.Yield(PauseBetweenLoadingSound);
+				//await Pop.Yield(PauseBetweenLoadingSound);
 			}
 			//await LoadSound(SoundUrls[0]);
 			//	gr: doesn't help, but force a wait for a render show debug appears
