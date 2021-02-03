@@ -47,8 +47,11 @@ body
 	//	Duration: 00:01:14.06, start: 0.000000, bitrate: 160 kb/s
 	//	Stream #0:0: Audio: mp3, 48000 Hz, stereo, s16p, 160 kb/s
 	//let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.mp3'];
-	let SoundUrls = ['AudioAssets/Blue/Blue_30Secs.mp3'];
-	const CropSoundSize = 1024*40;//null;
+	//	gr: different format makes no difference
+	//let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.aac'];
+	//let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.ogg'];
+	let SoundUrls = ['AudioAssets/Blue/Cluster5_BluePlaneOrgan.m4a'];
+	const CropSoundSize = null;//1024*40;//null;
 
 	//	if 	CreateSampleFromCode defined, the this is the params for createBuffer (channels, sampleframes, samplerate)
 	//	44khz stereo
@@ -63,7 +66,7 @@ body
 
 	let SoundDatas = {};	//	[url]
 	let Sounds = [];
-	let SoundBuffers = [];	
+	let SoundBuffers = [];
 	
 	function SetDivText(Name,Contents)
 	{
