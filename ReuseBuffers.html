@@ -34,8 +34,6 @@ body
 		return Promise;
 	}
 	
-	let gAudioContext = null;
-	const AudioContextPromise = Pop.CreatePromise();
 	
 	//	ffprobe silence
 	//	 Duration: 00:00:00.85, start: 0.000000, bitrate: 346 kb/s
@@ -65,7 +63,35 @@ body
 	let Sounds = [];
 	let SoundBuffers = [];
 	
-	
+	//	current audio context, this can change! never reference it!
+	let PopAudio = {};
+	PopAudio.AudioContext = null;
+	//	when the audio context changes (destroyed), this promise
+	//	will be recreated so that it won't return an old one
+	PopAudio.AudioContextPromise = Pop.CreatePromise();
+
+	PopAudio.DestroyAudioContext = function()
+	{	
+		if ( PopAudio.AudioContext  )
+		{
+			PopAudio.AudioContext.Release();
+			PopAudio.AudioContext = null;
+			//	just in case, reject the old promise if anyhting is referencing it (don't think this will do anything, as its already resolved)
+			PopAudio.AudioContextPromise.Reject('Audio context changed');
+			
+			//	new promise for the next context if anything requests it in the mean time
+			PopAudio.AudioContextPromise = Pop.CreatePromise();
+		}
+	}	
+
+	PopAudio.OnCreatedNewAudioContext = function(NewContext)
+	{
+		PopAudio.DestroyAudioContext();
+		
+		PopAudio.AudioContext = NewContext;
+		PopAudio.AudioContextPromise.Resolve(PopAudio.AudioContext);
+	}
+
 	
 	//	fill a buffer with PCM
 	function LoadAudioIntoBuffer(AudioBuffer,AudioData)
@@ -151,16 +177,37 @@ body
 		return SoundBuffer;
 	}
 
-	function GetAudioContext()
+	//	create audio context if it doesn't exist, this needs to be called from a DOM 
+	//	interaction (eg on click) for security reasons
+	function CreateAudioContext()
 	{
-		if ( !gAudioContext )
+		//	gr; this should probably change to PopAudio.DoYouWantToCreateNewAudioContext( CallbackToCreate )
+		if ( !PopAudio.AudioContext )
 		{
 			const TAudioContext = window.AudioContext || window.webkitAudioContext;
-			gAudioContext = new TAudioContext();
-			AudioContextPromise.Resolve(gAudioContext);
+			const NewContext = new TAudioContext();
+			PopAudio.OnCreatedNewAudioContext( NewContext );
 		}
-		return gAudioContext;
 	}
+
+	async function WaitForAudioContextChanged()
+	{
+		return await PopAudio.AudioContextPromise;
+	}
+	
+	async function GetAudioContext()
+	{
+		return await PopAudio.AudioContextPromise;
+	}
+	
+	function RestartAudioContext()
+	{
+		PopAudio.DestroyAudioContext();
+	}
+	
+	
+	
+	
 	
 	class Sound_t
 	{
@@ -243,13 +290,15 @@ body
 	const NoisePcmSecs = 10;
 	
 	let PauseBetweenLoadingSound = 0;
-	let NewSoundGroupDelay = 400;
+	let NewSoundGroupDelay = 200;
 	let Iterations = 900;
-	let ConcurrentSounds = 10;
+	let ConcurrentSounds = 20;
 	const MaxPoolSize = ConcurrentSounds;
 	let AudioBufferPool = null;
 	let CreatedSoundNodes = 0;
 	let FreedSoundNodes = 0;
+	
+	
 
 	class Pool_t
 	{
@@ -315,6 +364,8 @@ body
 					return Item;
 				}
 				
+				Debug(`Alloc() in exhausted pool; poolsize=${this.GetPoolSize()}, capacity=${this.Capacity} free=${this.FreeItems.length} used=${this.UsedItems.length}`);
+								
 				//	add more items to the  pool
 				if ( this.GetPoolSize() < this.Capacity )
 				{
@@ -394,10 +445,6 @@ body
 	
 	async function TestRun()
 	{
-		Debug(`Waiting for audio context`);
-		const AudioContext = await AudioContextPromise;
-		Debug(`Got audio context`);
-
 		for ( let i=0;	i<Iterations;	i++ )
 		{
 			let SoundNodes = [];
@@ -414,6 +461,7 @@ body
 			
 			for ( let s=0;	s<ConcurrentSounds;	s++ )
 			{
+				const AudioContext = await GetAudioContext();
 				Debug(`Allocating ${s}/${ConcurrentSounds} in group ${i}`);
 				const Pcm = await LoadSoundDataNoise();
 				const AudioBuffer = await AllocAudioBuffer(AudioContext);
@@ -433,11 +481,16 @@ body
 			FreeSoundNodes();
 		}	
 	}
+
+	function OnDomClick()
+	{
+		CreateAudioContext();
+	}
 	
 	function Start()
 	{
 		TestRun().catch(Debug);
-		GetAudioContext();
+		OnDomClick();
 	}
 	
 	
